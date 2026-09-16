@@ -1,0 +1,236 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bee1d03a-dae3-474a-b8c4-9bc47624035e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:5000/jobspy",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n    \"site_name\": [\n        \"linkedin\"\n    ],\n    \"search_term\": \"Fullstack Developer\",\n    \"location\": \"Brazil\",\n    \"focus_titles\": [\n        \"frontend\",\n        \"front-end\",\n        \"front end\",\n        \"fullstack\",\n        \"full-stack\",\n        \"full stack\",\n        \"backend\",\n        \"back-end\",\n        \"back end\",\n        \"software engineer\",\n        \"engenheiro de software\",\n        \"engenheira de software\",\n        \"desenvolvedor\",\n        \"desenvolvedora\",\n        \"react\",\n        \"angular\",\n        \"next\",\n        \"next.js\",\n        \"node\",\n        \"node.js\",\n        \"typescript\",\n        \"javascript\",\n        \"n8n\"\n    ],\n    \"discard_terms\": [\n        \"estágio\",\n        \"estagio\",\n        \"intern\",\n        \"internship\",\n        \"trainee\",\n        \"júnior\",\n        \"junior\",\n        \"jr\",\n        \"lead\",\n        \"tech lead\",\n        \"manager\",\n        \"gerente\",\n        \"director\",\n        \"coordenador\",\n        \"banco de talentos\",\n        \"talent pool\",\n        \"banco de perfis\",\n        \"qa\",\n        \"tester\",\n        \"data\",\n        \"dados\",\n        \"devops\",\n        \"suporte\",\n        \"help desk\",\n        \"infraestrutura\",\n        \"ios\",\n        \"flutter\",\n        \"c#\",\n        \".net\",\n        \"java\",\n        \"php\",\n        \"python\",\n        \"ruby\",\n        \"vue\",\n        \"golang\",\n        \"rust\",\n        \"wordpress\",\n        \"magento\"\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "aa6523e8-3d8e-4bf2-a7e3-db70ef7509e6",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f2c1a10-3b4e-4c1a-9a2e-1f0c6b6a1d11",
+              "name": "candidate_profile",
+              "value": "COLE AQUI O PERFIL DO CANDIDATO (experiência, stacks, senioridade, modelo de trabalho)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "includeOtherFields": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "c7d2e5a4-6b1f-4a8e-9d3c-2e5a1f0b8c22",
+      "name": "Candidate Profile"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "d8e3f6b5-7c2a-4b9f-8e4d-3f6b2a1c9d33",
+      "name": "Split Out Jobs"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "e9f4a7c6-8d3b-4c1a-9f5e-4a7c3b2d0e44",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:5000/analyze",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"job\": $json, \"candidate_profile\": $('Candidate Profile').first().json.candidate_profile } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1152,
+        -96
+      ],
+      "id": "f0a5b8d7-9e4c-4d2b-a06f-5b8d4c3e1f55",
+      "name": "HTTP Request - Analyze"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a1b2c3d4-1111-4a2b-8c3d-9e0f1a2b3c44",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1376,
+        -96
+      ],
+      "id": "b2c3d4e5-2222-4b3c-9d4e-0f1a2b3c4d55",
+      "name": "Score >= 60?"
+    },
+    {
+      "parameters": {
+        "chatId": "COLOQUE_AQUI_O_CHAT_ID",
+        "text": "=🎯 Nova vaga (score {{ $json.score }})\n{{ $json.title }} - {{ $json.company }}\n{{ $json.location }}\n{{ $json.url }}\n\nResumo: {{ $json.resumo_vaga }}\n\nPontos fortes: {{ $json.pontos_fortes.join(', ') }}\nFaltando: {{ $json.requisitos_faltantes.join(', ') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        -192
+      ],
+      "id": "c3d4e5f6-3333-4c4d-ae5f-1a2b3c4d5e66",
+      "name": "Send Telegram",
+      "webhookId": "d4e5f6a7-4444-4d5e-bf6a-2b3c4d5e6f77"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Candidate Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidate Profile": {
+      "main": [
+        [
+          {
+            "node": "Split Out Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Jobs": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request - Analyze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Analyze": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "782d44eb-57b0-4c56-a65b-5c1158aa1d9b",
+  "meta": {
+    "instanceId": "ce9adec3dd901698035cc1244c0116ad376778950c75f75392e05348bee397a5"
+  },
+  "nodeGroups": [],
+  "id": "U0YzyZRAR1mibQyn",
+  "tags": []
+}

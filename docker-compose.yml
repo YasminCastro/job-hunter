@@ -1,0 +1,55 @@
+services:
+  api:
+    build: .
+    container_name: job-hunter
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_DEBUG=1
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+
+  ollama:
+    image: ollama/ollama
+    container_name: job-hunter-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama-pull:
+    image: ollama/ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["ollama", "pull", "llama3.1:8b"]
+    environment:
+      - OLLAMA_HOST=ollama:11434
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: job-hunter-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_SECURE_COOKIE=false
+      - TZ=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/workflows
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - n8n import:workflow --input=/workflows --separate; n8n start
+
+volumes:
+  ollama_data:
+  n8n_data:
